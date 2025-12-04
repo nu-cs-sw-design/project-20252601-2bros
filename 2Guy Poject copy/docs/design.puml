@@ -2,8 +2,17 @@
 
 ' PRESENTATION 
 package presentation {
+  note as SSENote
+    Dashboards and notification views
+    use a RefreshStrategy together with
+    Server-Sent Events (SSE) so that
+    grades, attendance, health, and
+    discipline updates appear without
+    manual refresh when DomainEventBus
+    publishes new events.
+  end note
 
-  ' Views --------
+  ' Views (MVC)
   class StudentParentDashboardView {
     +showDashboard(vm)
     +showError(message)
@@ -132,6 +141,8 @@ package presentation {
   class NotificationViewModel {
     +notificationsSummary: String
   }
+
+  SSENote .. DashboardController
 }
 
 ' DOMAIN 
@@ -307,6 +318,10 @@ package domain {
     +markRead(notificationId)
   }
 
+  class EnrollmentService {
+    +enrollStudentInSection(studentId, sectionId, parentId, relationship)
+  }
+
   class ReportingFacade {
     +buildAndExport(reportType, context, exportStrategy)
   }
@@ -428,6 +443,7 @@ package datasource {
 
   interface EnrollmentRepository {
     +findByStudentId(studentId)
+    +save(enrollment)
   }
 
   interface AssignmentRepository {
@@ -547,6 +563,9 @@ GradebookService ..> GradebookRepository
 GradebookService ..> AssignmentRepository
 GradebookService ..> FeedbackRepository
 GradebookService ..> DomainEventBus
+
+EnrollmentService ..> EnrollmentRepository
+EnrollmentService ..> ParentStudentLinkRepository
 
 AttendanceService ..> AttendanceRepository
 AttendanceService ..> DomainEventBus

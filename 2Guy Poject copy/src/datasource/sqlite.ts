@@ -166,7 +166,12 @@ export class SqliteGradebookRepository implements GradebookRepository {
     return Promise.resolve(queryAll<GradeEntry>(this.db, sql, [sectionId]));
   }
   findGradesForStudent(studentId: string) {
-    return Promise.resolve(queryAll<GradeEntry>(this.db, 'SELECT * FROM grade_entries WHERE student_id = ?', [studentId]));
+    const sql = `
+      SELECT g.*, a.section_id as sectionId
+      FROM grade_entries g
+      LEFT JOIN assignments a ON a.id = g.assignment_id
+      WHERE g.student_id = ?`;
+    return Promise.resolve(queryAll<GradeEntry>(this.db, sql, [studentId]));
   }
   saveGrade(gradeEntry: GradeEntry) {
     run(

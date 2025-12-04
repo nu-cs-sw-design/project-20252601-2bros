@@ -9,8 +9,8 @@ import {
   RolePermission,
   Session,
   User,
-} from './entities';
-import { KnownDomainEvent } from './events';
+} from "./entities";
+import { KnownDomainEvent } from "./events";
 import {
   AssignmentRepository,
   AttendanceRepository,
@@ -30,32 +30,39 @@ import {
   StudentRepository,
   TeacherRepository,
   UserRepository,
-} from '../datasource/repositories';
-import { ExportStrategy, SearchStrategy } from './strategies';
-import { randomUUID } from 'crypto';
-import { NotificationRoutingStrategy } from './notificationRouting';
+} from "../datasource/repositories";
+import { ExportStrategy, SearchStrategy } from "./strategies";
+import { randomUUID } from "crypto";
+import { NotificationRoutingStrategy } from "./notificationRouting";
 
 // Simple in-memory domain event bus.
 export class DomainEventBus {
-  private handlers: Record<string, Array<(event: KnownDomainEvent) => void>> = {};
+  private handlers: Record<string, Array<(event: KnownDomainEvent) => void>> =
+    {};
 
-  subscribe(eventType: KnownDomainEvent['type'], handler: (event: KnownDomainEvent) => void) {
+  subscribe(
+    eventType: KnownDomainEvent["type"],
+    handler: (event: KnownDomainEvent) => void
+  ) {
     this.handlers[eventType] = this.handlers[eventType] ?? [];
     this.handlers[eventType].push(handler);
   }
 
   publish(event: KnownDomainEvent) {
-    this.handlers[event.type]?.forEach(handler => handler(event));
+    this.handlers[event.type]?.forEach((handler) => handler(event));
   }
 }
 
 export class AuthService {
   constructor(
     private users: UserRepository,
-    private sessions: SessionRepository,
+    private sessions: SessionRepository
   ) {}
 
-  async authenticate(username: string, password: string): Promise<Session | null> {
+  async authenticate(
+    username: string,
+    password: string
+  ): Promise<Session | null> {
     const user = await this.users.findByUsername(username);
     if (!user) return null;
     // Password check placeholder; replace with a real hash verify.
@@ -85,14 +92,19 @@ export class GradebookService {
     private grades: GradebookRepository,
     private assignments: AssignmentRepository,
     private feedbackRepo: FeedbackRepository,
-    private events: DomainEventBus,
+    private events: DomainEventBus
   ) {}
 
   getGradebookForSection(sectionId: string, _teacherId: string) {
     return this.grades.findGradesForSection(sectionId);
   }
 
-  async updateGrade(assignmentId: string, studentId: string, points: number, comment: string) {
+  async updateGrade(
+    assignmentId: string,
+    studentId: string,
+    points: number,
+    comment: string
+  ) {
     const grade: GradeEntry = {
       id: randomUUID(),
       assignmentId,
@@ -101,14 +113,20 @@ export class GradebookService {
       comment,
     };
     await this.grades.saveGrade(grade);
+    const assignment = await this.assignments.findById(assignmentId);
     this.events.publish({
-      type: 'GradesUpdated',
+      type: "GradesUpdated",
       occurredAt: new Date().toISOString(),
-      payload: { studentId, sectionId: (await this.assignments.findById(assignmentId))?.sectionId ?? '' },
+      payload: { studentId, sectionId: assignment?.sectionId ?? "" },
     });
   }
 
-  async addFeedback(studentId: string, sectionId: string, comment: string, teacherId: string) {
+  async addFeedback(
+    studentId: string,
+    sectionId: string,
+    comment: string,
+    teacherId: string
+  ) {
     const feedback: Feedback = {
       id: randomUUID(),
       studentId,
@@ -119,7 +137,7 @@ export class GradebookService {
     };
     await this.feedbackRepo.saveFeedback(feedback);
     this.events.publish({
-      type: 'GradesUpdated',
+      type: "GradesUpdated",
       occurredAt: new Date().toISOString(),
       payload: { studentId, sectionId },
     });
@@ -133,14 +151,20 @@ export class GradebookService {
 export class AttendanceService {
   constructor(
     private attendanceRepo: AttendanceRepository,
-    private events: DomainEventBus,
+    private events: DomainEventBus
   ) {}
 
   getAttendanceForStudent(studentId: string) {
     return this.attendanceRepo.findByStudentId(studentId);
   }
 
-  async markAttendance(sectionId: string, studentId: string, date: string, status: string, reason: string) {
+  async markAttendance(
+    sectionId: string,
+    studentId: string,
+    date: string,
+    status: string,
+    reason: string
+  ) {
     const record: AttendanceRecord = {
       id: randomUUID(),
       sectionId,
@@ -151,7 +175,7 @@ export class AttendanceService {
     };
     await this.attendanceRepo.saveAttendance(record);
     this.events.publish({
-      type: 'AttendanceUpdated',
+      type: "AttendanceUpdated",
       occurredAt: new Date().toISOString(),
       payload: { studentId },
     });
@@ -161,7 +185,7 @@ export class AttendanceService {
 export class HealthService {
   constructor(
     private healthRepo: HealthRepository,
-    private events: DomainEventBus,
+    private events: DomainEventBus
   ) {}
 
   getHealthVisits(studentId: string) {
@@ -178,7 +202,7 @@ export class HealthService {
     };
     await this.healthRepo.saveVisit(visit);
     this.events.publish({
-      type: 'NurseVisitLogged',
+      type: "NurseVisitLogged",
       occurredAt: new Date().toISOString(),
       payload: { studentId },
     });
@@ -188,14 +212,19 @@ export class HealthService {
 export class DisciplineService {
   constructor(
     private disciplineRepo: DisciplineRepository,
-    private events: DomainEventBus,
+    private events: DomainEventBus
   ) {}
 
   getDiscipline(studentId: string) {
     return this.disciplineRepo.findActionsByStudentId(studentId);
   }
 
-  async recordDiscipline(studentId: string, adminId: string, actionType: string, notes: string) {
+  async recordDiscipline(
+    studentId: string,
+    adminId: string,
+    actionType: string,
+    notes: string
+  ) {
     const action: DisciplineAction = {
       id: randomUUID(),
       studentId,
@@ -206,7 +235,7 @@ export class DisciplineService {
     };
     await this.disciplineRepo.saveAction(action);
     this.events.publish({
-      type: 'DisciplineRecorded',
+      type: "DisciplineRecorded",
       occurredAt: new Date().toISOString(),
       payload: { studentId },
     });
@@ -216,7 +245,7 @@ export class DisciplineService {
 export class AccessControlService {
   constructor(
     private rolePermissions: RolePermissionRepository,
-    private users: UserRepository,
+    private users: UserRepository
   ) {}
 
   async authorize(userId: string, permission: string, _resourceId?: string) {
@@ -227,7 +256,9 @@ export class AccessControlService {
   }
 
   permissionsForUser(userId: string) {
-    return this.users.findById(userId).then(user => (user ? this.rolePermissions.findByRole(user.role) : []));
+    return this.users
+      .findById(userId)
+      .then((user) => (user ? this.rolePermissions.findByRole(user.role) : []));
   }
 }
 
@@ -235,7 +266,7 @@ export class NotificationService {
   constructor(
     private notifications: NotificationRepository,
     private events: DomainEventBus,
-    private routing: NotificationRoutingStrategy,
+    private routing: NotificationRoutingStrategy
   ) {}
 
   async notify(event: KnownDomainEvent) {
@@ -254,17 +285,22 @@ export class NotificationService {
     }
   }
 
-  async notifyTeacherMessage(teacherId: string, studentId: string, sectionId: string, message: string) {
+  async notifyTeacherMessage(
+    teacherId: string,
+    studentId: string,
+    sectionId: string,
+    message: string
+  ) {
     const routing: any = this.routing as any;
     const recipients =
-      typeof routing.recipientsForStudentAndParents === 'function'
+      typeof routing.recipientsForStudentAndParents === "function"
         ? await routing.recipientsForStudentAndParents(studentId)
         : [studentId];
     for (const userId of recipients) {
       const notification: Notification = {
         id: randomUUID(),
         userId,
-        type: 'TeacherMessage',
+        type: "TeacherMessage",
         message: `From ${teacherId} (section ${sectionId}): ${message}`,
         read: false,
         createdAt: new Date().toISOString(),
@@ -273,18 +309,36 @@ export class NotificationService {
     }
   }
 
+  async notifyFeedbackToStudent(
+    teacherId: string,
+    studentId: string,
+    sectionId: string,
+    comment: string
+  ) {
+    // Send feedback ONLY to student, not parents
+    const notification: Notification = {
+      id: randomUUID(),
+      userId: studentId,
+      type: "FeedbackFromTeacher",
+      message: `From teacher-${teacherId} (section ${sectionId}): ${comment}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    await this.notifications.save(notification);
+  }
+
   private buildMessage(event: KnownDomainEvent): string {
     switch (event.type) {
-      case 'GradesUpdated':
+      case "GradesUpdated":
         return `Grades updated for student ${event.payload.studentId}`;
-      case 'AttendanceUpdated':
+      case "AttendanceUpdated":
         return `Attendance updated for student ${event.payload.studentId}`;
-      case 'NurseVisitLogged':
+      case "NurseVisitLogged":
         return `New nurse visit logged for student ${event.payload.studentId}`;
-      case 'DisciplineRecorded':
+      case "DisciplineRecorded":
         return `Discipline action recorded for student ${event.payload.studentId}`;
       default:
-        return 'New update available';
+        return "New update available";
     }
   }
 
@@ -307,22 +361,29 @@ export class DashboardService {
     private attendance: AttendanceRepository,
     private feedback: FeedbackRepository,
     private health: HealthRepository,
-    private discipline: DisciplineRepository,
+    private discipline: DisciplineRepository
   ) {}
 
   async buildDashboardForStudent(studentId: string) {
-    const [student, enrollmentSections, grades, attendanceRecords, feedback, healthVisits, disciplineActions] =
-      await Promise.all([
-        this.students.findById(studentId),
-        this.sections.findByStudentId(studentId),
-        this.grades.findGradesForStudent(studentId),
-        this.attendance.findByStudentId(studentId),
-        this.feedback.findByStudentId(studentId),
-        this.health.findVisitsByStudentId(studentId),
-        this.discipline.findActionsByStudentId(studentId),
-      ]);
+    const [
+      student,
+      enrollmentSections,
+      grades,
+      attendanceRecords,
+      feedback,
+      healthVisits,
+      disciplineActions,
+    ] = await Promise.all([
+      this.students.findById(studentId),
+      this.sections.findByStudentId(studentId),
+      this.grades.findGradesForStudent(studentId),
+      this.attendance.findByStudentId(studentId),
+      this.feedback.findByStudentId(studentId),
+      this.health.findVisitsByStudentId(studentId),
+      this.discipline.findActionsByStudentId(studentId),
+    ]);
     return {
-      studentName: student?.name ?? 'Unknown',
+      studentName: student?.name ?? "Unknown",
       classesSummary: enrollmentSections,
       gradesSummary: grades,
       attendanceSummary: attendanceRecords,
@@ -335,7 +396,7 @@ export class DashboardService {
   async buildDashboardForParent(parentId: string) {
     const links = await this.parentLinks.findByParentId(parentId);
     const dashboards = await Promise.all(
-      links.map(link => this.buildDashboardForStudent(link.studentId)),
+      links.map((link) => this.buildDashboardForStudent(link.studentId))
     );
     return dashboards;
   }
@@ -344,7 +405,7 @@ export class DashboardService {
 export class SearchService<TCriteria, TItem> {
   constructor(private strategy: SearchStrategy<TCriteria, TItem>) {}
   search(criteria: TCriteria, dataset: TItem[]) {
-    return dataset.filter(item => this.strategy.match(item, criteria));
+    return dataset.filter((item) => this.strategy.match(item, criteria));
   }
 }
 
@@ -365,13 +426,22 @@ export class AuditLogService {
 export class EnrollmentService {
   constructor(
     private enrollments: EnrollmentRepository,
-    private parentLinks: ParentStudentLinkRepository,
+    private parentLinks: ParentStudentLinkRepository
   ) {}
 
-  async enrollStudentInSection(studentId: string, sectionId: string, parentId?: string, relationship?: string) {
+  async enrollStudentInSection(
+    studentId: string,
+    sectionId: string,
+    parentId?: string,
+    relationship?: string
+  ) {
     await this.enrollments.save({ studentId, sectionId });
     if (parentId) {
-      await this.parentLinks.save({ parentId, studentId, relationship: relationship ?? 'parent' });
+      await this.parentLinks.save({
+        parentId,
+        studentId,
+        relationship: relationship ?? "parent",
+      });
     }
   }
 }
@@ -380,19 +450,23 @@ export class EnrollmentService {
 export class ReportingFacade<TData> {
   constructor(
     private dashboardService: DashboardService,
-    private notificationService: NotificationService,
+    private notificationService: NotificationService
   ) {}
 
   async buildAndExport(
     reportType: string,
     context: { studentId?: string; parentId?: string },
-    exportStrategy: ExportStrategy<TData>,
+    exportStrategy: ExportStrategy<TData>
   ) {
     let data: unknown;
-    if (reportType === 'student-dashboard' && context.studentId) {
-      data = await this.dashboardService.buildDashboardForStudent(context.studentId);
-    } else if (reportType === 'parent-dashboard' && context.parentId) {
-      data = await this.dashboardService.buildDashboardForParent(context.parentId);
+    if (reportType === "student-dashboard" && context.studentId) {
+      data = await this.dashboardService.buildDashboardForStudent(
+        context.studentId
+      );
+    } else if (reportType === "parent-dashboard" && context.parentId) {
+      data = await this.dashboardService.buildDashboardForParent(
+        context.parentId
+      );
     } else {
       data = {};
     }
@@ -400,9 +474,9 @@ export class ReportingFacade<TData> {
     const rendered = exporter.exportReport(reportType, data as TData);
     if (context.studentId) {
       await this.notificationService.notify({
-        type: 'GradesUpdated',
+        type: "GradesUpdated",
         occurredAt: new Date().toISOString(),
-        payload: { studentId: context.studentId, sectionId: '' },
+        payload: { studentId: context.studentId, sectionId: "" },
       });
     }
     return rendered;

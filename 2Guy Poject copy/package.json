@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "ts-node scripts/migrate.ts",
+    "db:reset": "ts-node scripts/reset-db.ts",
     "serve": "ts-node server/index.ts"
   },
   "devDependencies": {

@@ -80,6 +80,22 @@ describe('NotificationService', () => {
     const updated = await service.list('student-1');
     expect(updated[0]?.read).toBe(true);
   });
+
+  it('sends teacher messages to student and parents', async () => {
+    const repo = new InMemoryNotificationRepository();
+    const bus = new DomainEventBus();
+    const links = new InMemoryParentStudentLinkRepository([{ parentId: 'parent-1', studentId: 'student-1', relationship: 'mother' }]);
+    const service = new NotificationService(repo, bus, new StudentParentRoutingStrategy(links));
+
+    await service.notifyTeacherMessage('teacher-1', 'student-1', 'section-1', 'Check in with me after class');
+
+    const studentNotes = await service.list('student-1');
+    const parentNotes = await service.list('parent-1');
+    expect(studentNotes.length).toBe(1);
+    expect(parentNotes.length).toBe(1);
+    expect(studentNotes[0]?.message).toContain('teacher-1');
+    expect(parentNotes[0]?.message).toContain('teacher-1');
+  });
 });
 
 describe('AccessControlService', () => {
