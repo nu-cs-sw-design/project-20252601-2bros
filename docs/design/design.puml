@@ -5,86 +5,95 @@ package presentation {
 
   ' Views --------
   class StudentParentDashboardView {
-    +showDashboard(vm)
-    +showError(message)
+    +showDashboard(): void
+    +showError(message: String): void
   }
 
   class TeacherGradebookView {
-    +showGradebook(vm)
-    +showSuccess(message)
-    +showError(message)
+    +showGradebook(): void
+    +showSuccess(message: String): void
+    +showError(message: String): void
   }
 
   class AttendanceView {
-    +showAttendance(vm)
-    +showError(message)
+    +showAttendance(): void
+    +showError(message: String): void
   }
 
   class HealthView {
-    +showHealth(vm)
-    +showError(message)
+    +showNurseVisits(): void
+    +showError(message: String): void
   }
 
   class DisciplineView {
-    +showDiscipline(vm)
-    +showError(message)
+    +showDiscipline(): void
+    +showError(message: String): void
   }
 
   class LoginView {
     +showLogin()
-    +showLoginError(message)
+    +showLoginError(message: String): void
   }
 
-  '  Controllers (MVC)
   class DashboardController {
     -dashboardView: DashboardView
+    -gradebookService: GradebookService
+    -healthService: HealthService
+    -disciplineService: DisciplineService
+    -attendanceService: AttendanceService
 
-    +loadStudentDashboard(studentId)
-    +loadParentDashboard(parentId)
+    +loadStudentDashboard(studentId: String): void
+    +loadParentDashboard(parentId: String): void
+    +update(event: GradebookEvent): void
+    +update(event: HealthEvent): void
+    +update(event: DisciplineEvent): void
+    +update(event: AttendanceEvent): void
   }
 
   class GradebookController {
     -gradebookView: TeacherGradebookView
     -gradebookService: GradebookService
 
-    +viewGradebook(sectionId, teacherId)
-    +updateGrade(assignmentId, studentId, points, comment)
-    +addFeedback(studentId, sectionId, comment)
+    +viewGradebook(sectionId: String, teacherId: String): void
+    +updateGrade(assignmentId: String, studentId: String, points: float, comment: String): void
+    +addFeedback(studentId: String, sectionId: String, comment: String): void
+    +update(event: GradebookEvent): void
   }
 
   class AttendanceController {
     -attendanceView: AttendanceView
     -attendanceService: AttendanceService
 
-    +viewAttendance(studentId)
-    +markAttendance(sectionId, studentId, date, status)
+    +viewAttendance(studentId: String): void
+    +markAttendance(sectionId: String, studentId: String, date: String, status: boolean): void
+    +update(event: AttendanceEvent): void
   }
 
   class HealthController {
     -healthView: HealthView
     -healthService: HealthService
 
-    +viewHealthVisits(studentId)
-    +recordVisit(studentId, nurseId, notes)
+    +viewHealthVisits(studentId: String): void
+    +recordVisit(studentId: String, nurseId: String, notes: String): void
+    +update(event: HealthEvent): void
   }
 
   class DisciplineController {
     -disciplineView: DisciplineView
     -disciplineService: DisciplineService
 
-    +viewDiscipline(studentId)
-    +recordDiscipline(studentId, adminId, action, notes)
+    +viewDiscipline(studentId: String): void
+    +recordDiscipline(studentId: String, adminId: String, action: String, notes: String): void
+    +update(event: DisciplineEvent): void
   }
 
   class AuthController {
     -loginView: LoginView
+    -authService: AuthService
 
-    +login(username, password)
-    +logout()
-  }
-
-  +interface Observer {
-    +update(): void
+    +login(username: String, password: String): void
+    +logout(): void
+    +update(event: AuthEvent): void
   }
 }
 
@@ -122,7 +131,6 @@ package domain {
       ADMINISTRATOR
     }
 
-  ' School Structure 
   +class Class {
     -id: String
     -name: String
@@ -172,7 +180,6 @@ package domain {
     +toMap(): Map
   }
 
-  ' Grades & Feedback 
   +class Assignment {
     -id: String
     -sectionId: String
@@ -200,9 +207,9 @@ package domain {
     -comment: String
 
     +getId(): String
-    +getAssignmentId: String
+    +getAssignmentId(): String
     +getStudentId(): String
-    +getPoints: float
+    +getPoints(): float
     +getComment(): String
     +setAssignmentId(assignmentId: String): void
     +setStudentId(studentId: String): void
@@ -233,7 +240,6 @@ package domain {
     +toMap(): Map
   }
 
-  ' Attendance / Health / Discipline
   class AttendanceRecord {
     -id: String
     -studentId: String
@@ -307,12 +313,15 @@ package domain {
     SUSPENSION
   }
 
-  ' Domain Services 
   class AuthService {
     -userRepository: UserRepository
 
-    +authenticate(username, password)
-    +getCurrentUser()
+    +authenticate(username: String, password: String): boolean
+    +getCurrentUser(): User
+
+    +registerObserver(observer: Observer<AuthEvent>): void
+    +removeObserver(observer: Observer<AuthEvent>): void
+    +notifyObservers(event: AuthEvent): void
   }
 
   class GradebookService {
@@ -321,51 +330,126 @@ package domain {
     -sectionRepository: SectionRepository
     -feedbackRepository: Repository
 
-    +getGradebookForSection(sectionId, teacherId)
-    +updateGrade(assignmentId, studentId, points, comment)
-    +addFeedback(studentId, sectionId, comment, teacherId)
-    +getGradesForStudent(studentId)
+    +getGradesForSection(sectionId: String, teacherId: String): List<GradeEntry>
+    +getGradesForStudent(studentId: String)
+    +updateGrade(assignmentId: String, studentId: String, points: float, comment: String): void
+    +addFeedback(studentId: String, sectionId: String, comment: String, teacherId: String): void
+    +getFeedback(studentId: String): List<Feedback>
+
+    +registerObserver(observer: Observer<GradebookEvent>): void
+    +removeObserver(observer: Observer<GradebookEvent>): void
+    +notifyObservers(event: GradebookEvent)): void
   }
 
   class AttendanceService {
     -attendanceRepository: Repository
 
-    +getAttendanceForStudent(studentId)
-    +markAttendance(sectionId, studentId, date, status, reason)
+    +getAttendanceForStudent(studentId): List<AttendanceRecord>
+    +markAttendance(sectionId: String, studentId: String, date: LocalDate, status: AttendanceStatus, reason: String): void
+
+    +registerObserver(observer: Observer<AttendanceEvent>): void
+    +removeObserver(observer: Observer<AttendanceEvent>): void
+    +notifyObservers(event: AttendanceEvent): void
   }
 
   class HealthService {
     -healthRepository: Repository
 
-    +getHealthVisits(studentId)
-    +recordVisit(studentId, nurseId, notes)
+    +getNurseVisits(studentId: String): List<NurseVisit>
+    +recordVisit(studentId: String, nurseId: String, notes: String): void
+
+    +registerObserver(observer: Observer<HealthEvent>): void
+    +removeObserver(observer: Observer<HealthEvent>): void
+    +notifyObservers(event: HealthEvent): void
   }
 
   class DisciplineService {
     -disciplineRepository: Repository
 
-    +getDiscipline(studentId)
-    +recordDiscipline(studentId, adminId, actionType, notes)
+    +getDisciplineActions(studentId: String): List<DisciplineAction>
+    +recordDisciplineAction(studentId: String, adminId: String, actionType: DisciplineActionType, notes: String): void
+
+    +registerObserver(observer: Observer<DisciplineEvent>): void
+    +removeObserver(observer: Observer<DisciplineEvent>): void
+    +notifyObservers(event: DisciplineEvent): void
   }
 
-  class DashboardService {
-    -gradeRepository: GradebookAssignmentRepository
-    -assignmentRepository: GradebookAssignmentRepository
-    -sectionRepository: SectionRepository
-    -feedbackRepository: Repository
-    -attendanceRepository: Repository
-    -healthRepository: Repository
-    -disciplineRepository: Repository
+  class HealthEvent {
+    -studentId: String
+    -nurseId: String
+    -visitId: String
+    -visitTime: LocalDateTime
 
-    +buildDashboardForStudent(studentId)
-    +buildDashboardForParent(parentId)
+    +getStudentId(): String
+    +getNurseId(): String
+    +getVisitId(): String
+    +getVisitTIme(): LocalDateTime
   }
 
-  +interface Observable {
-    +registerObserver(): void
-    +removeObserver(): void
-    +notifyObservers(): void
+  class GradebookEvent {
+    -studentId: String
+    -teacherId: String
+    -sectionId: String
+    -assignmentId: String
+    -feedbackId: String
+
+    +getStudentId(): String
+    +getTeacherId(): String
+    +getSectionId(): String
+    +getAssignmentId(): String
+    +getFeedbackId(): String
   }
+
+  class AttendanceEvent {
+    -studentId: String
+    -date: LocalDate
+    -sectionId: String
+    -status: AttendanceStatus
+    -reason: String
+
+    +getStudentId(): String
+    +getDate(): LocalDate
+    +getSectionId(): String
+    +getStatus(): String
+    +getReason(): String
+  }
+
+  class DisciplineEvent {
+    -studentId: String
+    -date: LocalDate
+    -adminId: String
+    -actionType: DisciplineActionType
+    -notes: String
+
+    +getStudentId(): String
+    +getDate(): LocalDate
+    +getAdminId(): String
+    +getActionType(): String
+    +getNotes(): Stringt
+  }
+
+  class AuthEvent {
+    -loginSuccessful: boolean
+    -errorMessage: String
+
+    +getLoginSuccessful(): boolean
+    +getErrorMessage(): String
+  }
+}
+
+package observer {
+    +interface Observable<T extends DomainEvent> {
+        +registerObserver(observer: Observer<T>): void
+        +removeObserver(observer: Observer<T>): void
+        +notifyObservers(event: T): void
+    }
+
+    +interface Observer<T extends DomainEvent> {
+        +update(event: T): void
+    }
+
+    +interface DomainEvent{
+    }
 }
 
 ' DATASOURCE 
@@ -384,66 +468,66 @@ package datasource {
   +class SqlUserRepository {
     +findByUsername(username: String): ResultSet
     +findById(id: String): ResultSet
-    +save(user: Record): void
+    +save(user: Map): void
   }
 
   +class SqlParentStudentLinkRepository {
     +findById(parentId: String): ResultSet
-    +save(parentStudentLink: Record): void
+    +save(parentStudentLink: Map): void
   }
 
   +class SqlClassRepository {
     +findById(id: String): ResultSet
-    +save(myClass: Record): void
+    +save(myClass: Map): void
   }
 
   +class SqlSectionRepository {
     +findById(id: String): ResultSet
     +findByStudentId(studentId: String): ResultSet
     +findByTeacherId(teacherId: String): ResultSet
-    +save(section: Record): void`
+    +save(section: Map): void`
   }
 
   +class SqlEnrollmentRepository {
     +findById(id: String): ResultSet
-    +save(enrollment: Record): void
+    +save(enrollment: Map): void
   }
 
   +class SqlAssignmentRepository {
     +findById(id: String): ResultSet
     +findBySectionId(id: String): ResultSet
-    +save(assignment: Record): void
+    +save(assignment: Map): void
   }
 
   +class SqlGradebookRepository {
     +findById(studentId: String): ResultSet
     +findGradesForSection(sectionId: String): ResultSet
-    +save(gradeEntry: Record): void
+    +save(gradeEntry: Map): void
   }
 
   +class SqlFeedbackRepository {
     +findById(studentId: String): ResultSet
-    +save(feedback: Record): void
+    +save(feedback: Map): void
   }
 
   +class SqlAttendanceRepository {
     +findById(studentId: String): ResultSet
-    +save(attendance: Record): void
+    +save(attendance: Map): void
   }
 
   +class SqlHealthRepository {
     +findById(studentId: String): ResultSet
-    +save(visit: Record): void
+    +save(visit: Map): void
   }
 
   +class SqlDisciplineRepository {
     +findById(studentId: String): ResultSet
-    +save(action: Record): void
+    +save(action: Map): void
   }
 
-  +interface Repository<T extends Record> {
+  +interface Repository {
     {abstract}+findById(id: String): ResultSet
-    {abstract}+save(record: T)
+    {abstract}+save(record: Map)
   }
 
   +interface UserRepository {
@@ -463,37 +547,47 @@ package datasource {
 ' ARCHITECTURE ASSOCIATIONS 
 
 'Presentation uses Domain
-'DashboardController --> DashboardService
 DashboardController --> StudentParentDashboardView
 DashboardController ..|> Observer
 
-'GradebookController --> GradebookService
+GradebookController --> GradebookService
 GradebookController --> TeacherGradebookView
 GradebookController ..|> Observer
+GradebookController ..> GradebookEvent
+GradebookController ..> GradeEntry
+GradebookController ..> Assignment
+GradebookController ..> Feedback
+GradebookController ..> Class
+GradebookController ..> Section
 
-'AttendanceController --> AttendanceService
+
+AttendanceController --> AttendanceService
 AttendanceController --> AttendanceView
 AttendanceController ..|> Observer
+AttendanceController ..> AttendanceRecord
+AttendanceController ..> AttendanceEvent
 
-'HealthController --> HealthService
+HealthController --> HealthService
 HealthController --> HealthView
 HealthController ..|> Observer
+HealthController ..> NurseVisit
+HealthController ..> HealthEvent
 
-'DisciplineController --> DisciplineService
+DisciplineController --> DisciplineService
 DisciplineController --> DisciplineView
 DisciplineController ..|> Observer
+DisciplineController ..> DisciplineAction
+DisciplineController ..> DisciplineEvent
 
-AuthController ..> AuthService
-LoginView ..> AuthController
+AuthController --> LoginView
+AuthController --> AuthService
+AuthController ..> User
+AuthController ..> AuthEvent
 
-'Domain uses Datasource
 AuthService ..|> Observable
 AuthService --> UserRepository
 AuthService ..> User
-
-DashboardService -->"*" Repository
-DashboardService -->"*" GradebookAssignmentRepository
-DashboardService --> SectionRepository
+AuthService ..> AuthEvent
 
 GradebookService ..|> Observable
 GradebookService -->"*" GradebookAssignmentRepository
@@ -504,18 +598,22 @@ GradebookService ..> Assignment
 GradebookService ..> Feedback
 GradebookService ..> Section
 GradebookService ..> Class
+GradebookService ..> GradebookEvent
 
 AttendanceService ..|> Observable
 AttendanceService --> Repository
 AttendanceService ..> AttendanceRecord
+AttendanceService ..> AttendanceEvent
 
 HealthService ..|> Observable
 HealthService --> Repository
 HealthService ..> NurseVisit
+HealthService ..> HealthEvent
 
 DisciplineService ..|> Observable
 DisciplineService --> Repository
 DisciplineService ..> DisciplineAction
+DisciplineService ..> DisciplineEvent
 
 User --> UserType
 Class --> Subject
@@ -534,6 +632,16 @@ NurseVisit --|> Record
 DisciplineAction --|> Record
 Enrollment --|> Record
 ParentStudentLink --|> Record
+
+HealthEvent ..|> DomainEvent
+
+GradebookEvent ..|> DomainEvent
+
+DisciplineEvent ..|> DomainEvent
+
+AttendanceEvent ..|> DomainEvent
+
+AuthEvent ..|> DomainEvent
 
 GradebookAssignmentRepository --|> Repository
 SectionRepository --|> Repository
@@ -571,6 +679,4 @@ SqlGradebookRepository ..> SqlDatabase
 
 SqlAssignmentRepository ..|> GradebookAssignmentRepository
 SqlAssignmentRepository ..> SqlDatabase
-
-Repository ..> Record
 @enduml
