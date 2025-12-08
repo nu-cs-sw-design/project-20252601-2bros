@@ -37,198 +37,290 @@ package presentation {
 
   '  Controllers (MVC)
   class DashboardController {
+    -dashboardView: DashboardView
+
     +loadStudentDashboard(studentId)
     +loadParentDashboard(parentId)
   }
 
   class GradebookController {
+    -gradebookView: TeacherGradebookView
+    -gradebookService: GradebookService
+
     +viewGradebook(sectionId, teacherId)
     +updateGrade(assignmentId, studentId, points, comment)
     +addFeedback(studentId, sectionId, comment)
   }
 
   class AttendanceController {
+    -attendanceView: AttendanceView
+    -attendanceService: AttendanceService
+
     +viewAttendance(studentId)
     +markAttendance(sectionId, studentId, date, status)
   }
 
   class HealthController {
+    -healthView: HealthView
+    -healthService: HealthService
+
     +viewHealthVisits(studentId)
     +recordVisit(studentId, nurseId, notes)
   }
 
   class DisciplineController {
+    -disciplineView: DisciplineView
+    -disciplineService: DisciplineService
+
     +viewDiscipline(studentId)
     +recordDiscipline(studentId, adminId, action, notes)
   }
 
-  class SearchController {
-    +search(criteria, strategyKind)
-  }
-
-  class ExportController {
-    +exportReport(reportType, exportKind)
-  }
-
   class AuthController {
+    -loginView: LoginView
+
     +login(username, password)
     +logout()
   }
 
-  ' ViewModels (Models in MVC) 
-  class DashboardViewModel {
-    +studentName: String
-    +classesSummary: String
-    +gradesSummary: String
-    +attendanceSummary: String
-    +feedbackSummary: String
-    +disciplineSummary: String
-    +healthSummary: String
-  }
-
-  class GradebookViewModel {
-    +sectionName: String
-    +assignmentsSummary: String
-    +studentGradesSummary: String
-  }
-
-  class AttendanceViewModel {
-    +studentName: String
-    +recordsSummary: String
-  }
-
-  class HealthViewModel {
-    +studentName: String
-    +visitsSummary: String
-  }
-
-  class DisciplineViewModel {
-    +studentName: String
-    +actionsSummary: String
+  +interface Observer {
+    +update(): void
   }
 }
 
 ' DOMAIN 
 package domain {
-
+  +abstract class Record {
+    -id: String
+    +getById(): String
+    {abstract}+toMap(): Map
+  }
   ' Core Users / Roles 
-  class User {
-    +id: String
-    +username: String
-    +passwordHash: String
-    +role: String
-  }
+  +class User {
+    -id: String
+    -username: String
+    -passwordHash: String
+    -role: UserType
 
-  class Student {
-    +id: String
-    +name: String
-  }
-
-  class Parent {
-    +id: String
-    +name: String
-  }
-
-  class Teacher {
-    +id: String
-    +name: String
-  }
-
-  class Nurse {
-    +id: String
-    +name: String
-  }
-
-  class Administrator {
-    +id: String
-    +name: String
+    +getId(): String
+    +getUsername(): String
+    +getRole(): UserType
+    +toMap(): Map
   }
 
   class ParentStudentLink {
-    +parentId: String
-    +studentId: String
-    +relationship: String
+    -parentId: String
+    -studentId: String
+    +toMap(): Map
   }
+
+  +enum UserType {
+      STUDENT
+      PARENT
+      TEACHER
+      NURSE
+      ADMINISTRATOR
+    }
 
   ' School Structure 
-  class Class {
-    +id: String
-    +name: String
-    +subject: String
+  +class Class {
+    -id: String
+    -name: String
+    -subject: Subject
+
+    +getId(): String
+    +getName(): String
+    +getSubject(): Subject
+    +setName(name: String): void
+    +setSubject(subject: Subject): void
+    +toMap(): Map
   }
 
-  class Section {
-    +id: String
-    +classId: String
-    +teacherId: String
-    +term: String
+  +enum Subject {
+    MATH
+    SCIENCE
+    HISTORY
+    ENGLISH
+  }
+
+  +class Section {
+    -id: String
+    -classId: String
+    -teacherId: String
+    -term: Term
+
+    +getId(): String
+    +getClassId(): String
+    +getTeacherId(): String
+    +getTerm(): Term
+    +setClassId(classId: String): void
+    +setTeacherId(teacherId: String): void
+    +setTerm(term: Term): void
+    +toMap(): Map
+  }
+
+  +enum Term {
+    FALL
+    WINTER
+    SPRING
+    SUMMER
   }
 
   class Enrollment {
-    +studentId: String
-    +sectionId: String
+    -studentId: String
+    -sectionId: String
+    +toMap(): Map
   }
 
   ' Grades & Feedback 
-  class Assignment {
-    +id: String
-    +sectionId: String
-    +title: String
-    +maxPoints: Double
-    +dueDate: String
+  +class Assignment {
+    -id: String
+    -sectionId: String
+    -name: String
+    -maxPoints: float
+    -dueDate: LocalDateTime
+
+    +getId(): String
+    +getSectionId(): String
+    +getName(): String
+    +getMaxPoints(): float
+    +getDueDate(): LocalDateTime
+    +setSectionId(sectionId: String): void
+    +setName(name: String): void
+    +setMaxPoints(maxPoints: float): void
+    +setDueDate(dueDate: LocalDateTime): void
+    +toMap(): Map
   }
 
   class GradeEntry {
-    +id: String
-    +assignmentId: String
-    +studentId: String
-    +points: Double
-    +comment: String
+    -id: String
+    -assignmentId: String
+    -studentId: String
+    -points: float
+    -comment: String
+
+    +getId(): String
+    +getAssignmentId: String
+    +getStudentId(): String
+    +getPoints: float
+    +getComment(): String
+    +setAssignmentId(assignmentId: String): void
+    +setStudentId(studentId: String): void
+    +setPoints(points: float): void
+    +setComment(comment: String): void
+    +toMap(): Map
   }
 
   class Feedback {
-    +id: String
-    +studentId: String
-    +sectionId: String
-    +teacherId: String
-    +comment: String
-    +createdAt: String
+    -id: String
+    -studentId: String
+    -sectionId: String
+    -teacherId: String
+    -comment: String
+    -createdAt: LocalDateTime
+
+    +getId(): String
+    +getStudentId(): String
+    +getSectionId(): String
+    +getTeacherId(): String
+    +getComment(): String
+    +getCreatedAt(): LocalDateTime
+    +setStudentId(studentId: String): void
+    +setSectionId(sectionId: String): void
+    +setTeacherId(sectionId: String): void
+    +setComment(comment: String): void
+    +setCreatedAt(createdAt: LocalDateTime): void
+    +toMap(): Map
   }
 
   ' Attendance / Health / Discipline
   class AttendanceRecord {
-    +id: String
-    +studentId: String
-    +sectionId: String
-    +date: String
-    +status: String
-    +reason: String
+    -id: String
+    -studentId: String
+    -date: LocalDate
+    -sectionId: String
+    -status: AttendanceStatus
+    -reason: String
+
+    +getId(): String
+    +getStudentId(): String
+    +getDate(): LocalDate
+    +getSectionId(): String
+    +getStatus(): AttendanceStatus
+    +getReason(): String
+    +setStudentId(studentId): void
+    +setDate(date: LocalDate): void
+    +setSectionId(sectionId: String): void
+    +setStatus(status: AttendanceStatus): void
+    +setReason(reason: String): void
+    +toMap(): Map
   }
 
   class NurseVisit {
-    +id: String
-    +studentId: String
-    +nurseId: String
-    +visitTime: String
-    +notes: String
+    -id: String
+    -studentId: String
+    -visitTime: LocalDateTime
+    -nurseId: String
+    -notes: String
+
+    +getId(): String
+    +getStudentId(): String
+    +getVisitTime(): LocalDateTime
+    +getNurseId(): String
+    +getNotes(): String
+    +setStudentId(studentId: String): void
+    +setVisitTime(date: LocalDateTime): void
+    +setNurseId(nurseId: String): void
+    +setNotes(notes: String): void
+    +toMap(): Map
   }
 
   class DisciplineAction {
-    +id: String
-    +studentId: String
-    +adminId: String
-    +date: String
-    +actionType: String
-    +notes: String
+    -id: String
+    -studentId: String
+    -date: LocalDate
+    -adminId: String
+    -actionType: DisciplineActionType
+    -notes: String
+
+    +getId(): String
+    +getStudentId(): String
+    +getDate(): LocalDate
+    +getAdminId(): String
+    +getActionType(): DisciplineActionType
+    +getNotes(): String
+    +setStudentId(studentId: String): void
+    +setDate(date: LocalDate): void
+    +setAdminId(adminId: String): void
+    +setActionType(actionType: DisciplineActionType): void
+    +setNotes(notes: String): void
+    +toMap(): Map
+  }
+
+  +enum AttendanceStatus {
+    PRESENT
+    ABSENT
+  }
+
+  +enum DisciplineActionType {
+    DETENTION
+    SUSPENSION
   }
 
   ' Domain Services 
   class AuthService {
+    -userRepository: UserRepository
+
     +authenticate(username, password)
     +getCurrentUser()
   }
 
   class GradebookService {
+    -gradeRepository: GradebookAssignmentRepository
+    -assignmentRepository: GradebookAssignmentRepository
+    -sectionRepository: SectionRepository
+    -feedbackRepository: Repository
+
     +getGradebookForSection(sectionId, teacherId)
     +updateGrade(assignmentId, studentId, points, comment)
     +addFeedback(studentId, sectionId, comment, teacherId)
@@ -236,300 +328,249 @@ package domain {
   }
 
   class AttendanceService {
+    -attendanceRepository: Repository
+
     +getAttendanceForStudent(studentId)
     +markAttendance(sectionId, studentId, date, status, reason)
   }
 
   class HealthService {
+    -healthRepository: Repository
+
     +getHealthVisits(studentId)
     +recordVisit(studentId, nurseId, notes)
   }
 
   class DisciplineService {
+    -disciplineRepository: Repository
+
     +getDiscipline(studentId)
     +recordDiscipline(studentId, adminId, actionType, notes)
   }
 
   class DashboardService {
+    -gradeRepository: GradebookAssignmentRepository
+    -assignmentRepository: GradebookAssignmentRepository
+    -sectionRepository: SectionRepository
+    -feedbackRepository: Repository
+    -attendanceRepository: Repository
+    -healthRepository: Repository
+    -disciplineRepository: Repository
+
     +buildDashboardForStudent(studentId)
     +buildDashboardForParent(parentId)
   }
 
-  class SearchService {
-    +search(criteria, strategy)
-  }
-
-  class ExportService {
-    +exportReport(reportType, exportStrategy)
-  }
-
-  ' Observer (Domain Events
-  class DomainEventBus {
-    +subscribe(eventType, handler)
-    +publish(event)
-  }
-
-  class GradesUpdated {
-    +studentId: String
-    +sectionId: String
-  }
-
-  class AttendanceUpdated {
-    +studentId: String
-  }
-
-  class NurseVisitLogged {
-    +studentId: String
-  }
-
-  class DisciplineRecorded {
-    +studentId: String
-  }
-
-  'Strategy (Search & Export) 
-  interface SearchStrategy {
-    +match(item, criteria)
-  }
-
-  class ContainsSearchStrategy {
-    +match(item, criteria)
-  }
-
-  class PrefixSearchStrategy {
-    +match(item, criteria)
-  }
-
-  class ExactSearchStrategy {
-    +match(item, criteria)
-  }
-
-  interface ExportStrategy {
-    +render(data)
-  }
-
-  class CsvExportStrategy {
-    +render(data)
-  }
-
-  class PdfExportStrategy {
-    +render(data)
-  }
-
-  ' Simple Report type 
-  class Report {
-    +title: String
-    +content: String
+  +interface Observable {
+    +registerObserver(): void
+    +removeObserver(): void
+    +notifyObservers(): void
   }
 }
 
 ' DATASOURCE 
 package datasource {
+  class SqlDatabase {
+    -{static} instance: SqlDatabase
+    -connection: Connection
+    -connectionUrl: String
+    -username: String
+    -password: String
 
-  interface UserRepository {
-    +findByUsername(username)
-    +findById(id)
+    -SqlDatabase(connectionUrl: String, username: String, password: String)
+    +{static} getInstance(): SqlDatabase
+    +executeQuery(sqlQuery: PreparedStatement): ResultSet
+  }
+  +class SqlUserRepository {
+    +findByUsername(username: String): ResultSet
+    +findById(id: String): ResultSet
+    +save(user: Record): void
   }
 
-  interface StudentRepository {
-    +findById(id)
+  +class SqlParentStudentLinkRepository {
+    +findById(parentId: String): ResultSet
+    +save(parentStudentLink: Record): void
   }
 
-  interface ParentRepository {
-    +findById(id)
-    +findByUserId(userId)
+  +class SqlClassRepository {
+    +findById(id: String): ResultSet
+    +save(myClass: Record): void
   }
 
-  interface ParentStudentLinkRepository {
-    +findByParentId(parentId)
+  +class SqlSectionRepository {
+    +findById(id: String): ResultSet
+    +findByStudentId(studentId: String): ResultSet
+    +findByTeacherId(teacherId: String): ResultSet
+    +save(section: Record): void`
   }
 
-  interface TeacherRepository {
-    +findById(id)
+  +class SqlEnrollmentRepository {
+    +findById(id: String): ResultSet
+    +save(enrollment: Record): void
   }
 
-  interface ClassRepository {
-    +findById(id)
+  +class SqlAssignmentRepository {
+    +findById(id: String): ResultSet
+    +findBySectionId(id: String): ResultSet
+    +save(assignment: Record): void
   }
 
-  interface SectionRepository {
-    +findById(id)
-    +findByStudentId(studentId)
-    +findByTeacherId(teacherId)
+  +class SqlGradebookRepository {
+    +findById(studentId: String): ResultSet
+    +findGradesForSection(sectionId: String): ResultSet
+    +save(gradeEntry: Record): void
   }
 
-  interface EnrollmentRepository {
-    +findByStudentId(studentId)
+  +class SqlFeedbackRepository {
+    +findById(studentId: String): ResultSet
+    +save(feedback: Record): void
   }
 
-  interface AssignmentRepository {
-    +findBySectionId(sectionId)
-    +findById(id)
+  +class SqlAttendanceRepository {
+    +findById(studentId: String): ResultSet
+    +save(attendance: Record): void
   }
 
-  interface GradebookRepository {
-    +findGradesForSection(sectionId)
-    +findGradesForStudent(studentId)
-    +saveGrade(gradeEntry)
+  +class SqlHealthRepository {
+    +findById(studentId: String): ResultSet
+    +save(visit: Record): void
   }
 
-  interface FeedbackRepository {
-    +findByStudentId(studentId)
-    +saveFeedback(feedback)
+  +class SqlDisciplineRepository {
+    +findById(studentId: String): ResultSet
+    +save(action: Record): void
   }
 
-  interface AttendanceRepository {
-    +findByStudentId(studentId)
-    +saveAttendance(record)
+  +interface Repository<T extends Record> {
+    {abstract}+findById(id: String): ResultSet
+    {abstract}+save(record: T)
   }
 
-  interface HealthRepository {
-    +findVisitsByStudentId(studentId)
-    +saveVisit(visit)
+  +interface UserRepository {
+    {abstract}+findByUsername(username: String): ResultSet
   }
 
-  interface DisciplineRepository {
-    +findActionsByStudentId(studentId)
-    +saveAction(action)
+  +interface GradebookAssignmentRepository {
+    {abstract}+findBySectionId(id: String): ResultSet
   }
 
-  interface AuditLogRepository {
-    +append(event)
+  +interface SectionRepository {
+    {abstract}+findByStudentId(id: String): ResultSet
+    {abstract}+findByTeacherId(id: String): ResultSet
   }
-
-  ' Example concrete implementations (optional)
-  class SqlGradebookRepository
-  class SqlAttendanceRepository
-  class SqlHealthRepository
-  class SqlDisciplineRepository
 }
 
 ' ARCHITECTURE ASSOCIATIONS 
 
 'Presentation uses Domain
-DashboardController ..> DashboardService
-DashboardController ..> DashboardViewModel
-DashboardController ..> StudentParentDashboardView
+'DashboardController --> DashboardService
+DashboardController --> StudentParentDashboardView
+DashboardController ..|> Observer
 
-GradebookController ..> GradebookService
-GradebookController ..> GradebookViewModel
-GradebookController ..> TeacherGradebookView
+'GradebookController --> GradebookService
+GradebookController --> TeacherGradebookView
+GradebookController ..|> Observer
 
-AttendanceController ..> AttendanceService
-AttendanceController ..> AttendanceViewModel
-AttendanceController ..> AttendanceView
+'AttendanceController --> AttendanceService
+AttendanceController --> AttendanceView
+AttendanceController ..|> Observer
 
-HealthController ..> HealthService
-HealthController ..> HealthViewModel
-HealthController ..> HealthView
+'HealthController --> HealthService
+HealthController --> HealthView
+HealthController ..|> Observer
 
-DisciplineController ..> DisciplineService
-DisciplineController ..> DisciplineViewModel
-DisciplineController ..> DisciplineView
+'DisciplineController --> DisciplineService
+DisciplineController --> DisciplineView
+DisciplineController ..|> Observer
 
-SearchController ..> SearchService
-ExportController ..> ExportService
 AuthController ..> AuthService
 LoginView ..> AuthController
 
-' Views depend on ViewModels
-StudentParentDashboardView ..> DashboardViewModel
-TeacherGradebookView ..> GradebookViewModel
-AttendanceView ..> AttendanceViewModel
-HealthView ..> HealthViewModel
-DisciplineView ..> DisciplineViewModel
+'Domain uses Datasource
+AuthService ..|> Observable
+AuthService --> UserRepository
+AuthService ..> User
 
-'Domain uses Datasource 
-AuthService ..> UserRepository
+DashboardService -->"*" Repository
+DashboardService -->"*" GradebookAssignmentRepository
+DashboardService --> SectionRepository
 
-DashboardService ..> StudentRepository
-DashboardService ..> ParentRepository
-DashboardService ..> ParentStudentLinkRepository
-DashboardService ..> SectionRepository
-DashboardService ..> GradebookRepository
-DashboardService ..> AttendanceRepository
-DashboardService ..> FeedbackRepository
-DashboardService ..> HealthRepository
-DashboardService ..> DisciplineRepository
+GradebookService ..|> Observable
+GradebookService -->"*" GradebookAssignmentRepository
+GradebookService --> SectionRepository
+GradebookService --> Repository
+GradebookService ..> GradeEntry
+GradebookService ..> Assignment
+GradebookService ..> Feedback
+GradebookService ..> Section
+GradebookService ..> Class
 
-GradebookService ..> GradebookRepository
-GradebookService ..> AssignmentRepository
-GradebookService ..> FeedbackRepository
-GradebookService ..> DomainEventBus
+AttendanceService ..|> Observable
+AttendanceService --> Repository
+AttendanceService ..> AttendanceRecord
 
-AttendanceService ..> AttendanceRepository
-AttendanceService ..> DomainEventBus
+HealthService ..|> Observable
+HealthService --> Repository
+HealthService ..> NurseVisit
 
-HealthService ..> HealthRepository
-HealthService ..> DomainEventBus
+DisciplineService ..|> Observable
+DisciplineService --> Repository
+DisciplineService ..> DisciplineAction
 
-DisciplineService ..> DisciplineRepository
-DisciplineService ..> DomainEventBus
+User --> UserType
+Class --> Subject
+Section --> Term
+AttendanceRecord --> AttendanceStatus
+DisciplineAction --> DisciplineActionType
 
-SearchService ..> SearchStrategy
-ExportService ..> ExportStrategy
+User --|> Record
+Assignment --|> Record
+GradeEntry --|> Record
+Section --|> Record
+Class --|> Record
+Feedback --|> Record
+AttendanceRecord --|> Record
+NurseVisit --|> Record
+DisciplineAction --|> Record
+Enrollment --|> Record
+ParentStudentLink --|> Record
 
-DomainEventBus ..> AuditLogRepository
+GradebookAssignmentRepository --|> Repository
+SectionRepository --|> Repository
+UserRepository --|> Repository
 
-'Strategy implementations
-ContainsSearchStrategy ..|> SearchStrategy
-PrefixSearchStrategy ..|> SearchStrategy
-ExactSearchStrategy ..|> SearchStrategy
+SqlUserRepository ..|> UserRepository
+SqlUserRepository ..> SqlDatabase
 
-CsvExportStrategy ..|> ExportStrategy
-PdfExportStrategy ..|> ExportStrategy
+SqlFeedbackRepository ..|> Repository
+SqlFeedbackRepository ..> SqlDatabase
 
-'Example  repos implementing interfaces
-SqlGradebookRepository ..|> GradebookRepository
-SqlAttendanceRepository ..|> AttendanceRepository
-SqlHealthRepository ..|> HealthRepository
-SqlDisciplineRepository ..|> DisciplineRepository
+SqlAttendanceRepository ..|> Repository
+SqlAttendanceRepository ..> SqlDatabase
 
-'DOMAIN RELATIONSHIPS (ARROWS) 
+SqlHealthRepository ..|> Repository
+SqlHealthRepository ..> SqlDatabase
 
-' Users / roles / links
-Parent -- ParentStudentLink
-Student -- ParentStudentLink
+SqlDisciplineRepository ..|> Repository
+SqlDisciplineRepository ..> SqlDatabase
 
-Section -- Class
-Section -- Teacher
+SqlParentStudentLinkRepository ..|> Repository
+SqlParentStudentLinkRepository ..> SqlDatabase
 
-Enrollment -- Student
-Enrollment -- Section
+SqlEnrollmentRepository ..|> Repository
+SqlEnrollmentRepository ..> SqlDatabase
 
-' Grades & feedback
-Assignment -- Section
-GradeEntry -- Assignment
-GradeEntry -- Student
+SqlClassRepository ..|> Repository
+SqlClassRepository ..> SqlDatabase
 
-Feedback -- Student
-Feedback -- Section
-Feedback -- Teacher
+SqlSectionRepository ..|> SectionRepository
+SqlSectionRepository ..> SqlDatabase
 
-' Attendance / health / discipline
-AttendanceRecord -- Student
-AttendanceRecord -- Section
+SqlGradebookRepository ..|> GradebookAssignmentRepository
+SqlGradebookRepository ..> SqlDatabase
 
-NurseVisit -- Student
-NurseVisit -- Nurse
+SqlAssignmentRepository ..|> GradebookAssignmentRepository
+SqlAssignmentRepository ..> SqlDatabase
 
-DisciplineAction -- Student
-DisciplineAction -- Administrator
-
-' Domain events to the entities they concern
-GradesUpdated -- Student
-GradesUpdated -- Section
-
-AttendanceUpdated -- Student
-NurseVisitLogged -- Student
-DisciplineRecorded -- Student
-
-'NEW: User-related arrows
-UserRepository ..> User
-
-Student ..> User
-Parent ..> User
-Teacher ..> User
-Nurse ..> User
-Administrator ..> User
-
+Repository ..> Record
 @enduml
